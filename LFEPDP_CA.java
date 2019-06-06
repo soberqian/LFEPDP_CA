@@ -25,7 +25,7 @@ import cc.mallet.util.Randoms;
  * 
  * This is the implementation of this model.
  * 
- * We also reference the code of the LFDMM.
+ * When coding algorithm algorithm, we also reference the code of the LFDMM that was written by Dat Quoc Nguyen.
  * 
  * @author Yang Qian
  */
@@ -33,63 +33,63 @@ import cc.mallet.util.Randoms;
 public class LFEPDP_CA
 {
 	public List<String> iter_topic;
-	public double alpha; // Hyper-parameter alpha  ³¬²ÎÊı
-	public double beta; // Hyper-parameter beta   ³¬²ÎÊı
+	public double alpha; // Hyper-parameter alpha  è¶…å‚æ•°
+	public double beta; // Hyper-parameter beta   è¶…å‚æ•°
 	// public double alphaSum; // alpha * numTopics
 	public double betaSum; // beta * vocabularySize  V*beta
 
-	public int numTopics; // Number of topics  Ö÷ÌâÊıÄ¿
-	public int topWords; // Number of most probable words for each topic  Ã¿¸öÖ÷ÌâÈ¡¶àÉÙ¸ö¿¿Ç°µÄµ¥´Ê
+	public int numTopics; // Number of topics  ä¸»é¢˜æ•°ç›®
+	public int topWords; // Number of most probable words for each topic  æ¯ä¸ªä¸»é¢˜å–å¤šå°‘ä¸ªé å‰çš„å•è¯
 
-	public double lambda; // Mixture weight value  »ìºÏÈ¨ÖØÖµ
+	public double lambda; // Mixture weight value  æ··åˆæƒé‡å€¼
 	public int numInitIterations;  //
-	public int numIterations; // Number of EM-style sampling iterations  µü´ú´ÎÊı
+	public int numIterations; // Number of EM-style sampling iterations  è¿­ä»£æ¬¡æ•°
 
-	public List<List<Integer>> corpus; // Word ID-based corpus  ÓïÁÏµ¥´ÊµÄid
-	public int[] z; //ÎÄµµ¶ÔÓ¦µÄÖ÷Ìâ
-	public int[][] z_words; //ÎÄµµÖĞÃ¿¸öµ¥´Ê¶ÔÓ¦µÄ×ÓÖ÷Ìâ£¬µÚ¶şÎ¬²ÉÓÃ0-1±íÊ¾£¬0±íÊ¾À´×ÔÓÚ¶àÏîÊ½·Ö²¼£¬1±íÊ¾À´×ÔÓÚÒşÌØÕ÷
+	public List<List<Integer>> corpus; // Word ID-based corpus  è¯­æ–™å•è¯çš„id
+	public int[] z; //æ–‡æ¡£å¯¹åº”çš„ä¸»é¢˜
+	public int[][] z_words; //æ–‡æ¡£ä¸­æ¯ä¸ªå•è¯å¯¹åº”çš„å­ä¸»é¢˜ï¼Œç¬¬äºŒç»´é‡‡ç”¨0-1è¡¨ç¤ºï¼Œ0è¡¨ç¤ºæ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒï¼Œ1è¡¨ç¤ºæ¥è‡ªäºéšç‰¹å¾
 	// in the corpus
-	public int numDocuments; // Number of documents in the corpus  ÎÄµµµÄÊıÁ¿
-	public int numWordsInCorpus; // Number of words in the corpus  Õû¸öÓïÁÏµ¥´ÊµÄÊıÁ¿
+	public int numDocuments; // Number of documents in the corpus  æ–‡æ¡£çš„æ•°é‡
+	public int numWordsInCorpus; // Number of words in the corpus  æ•´ä¸ªè¯­æ–™å•è¯çš„æ•°é‡
 
-	public HashMap<String, Integer> word2IdVocabulary; // Vocabulary to get ID  µ¥´ÊµÄ±àºÅ
+	public HashMap<String, Integer> word2IdVocabulary; // Vocabulary to get ID  å•è¯çš„ç¼–å·
 	// given a word
-	public HashMap<Integer, String> id2WordVocabulary; // Vocabulary to get word  ½«±àºÅ×ª»¯Îªµ¥´Ê  ÓÃÓÚÊä³ö
+	public HashMap<Integer, String> id2WordVocabulary; // Vocabulary to get word  å°†ç¼–å·è½¬åŒ–ä¸ºå•è¯  ç”¨äºè¾“å‡º
 	// given an ID
-	public int vocabularySize; // The number of word types in the corpus  Õû¸öÓïÁÏÖĞµ¥´ÊµÄ×ÜÊı
+	public int vocabularySize; // The number of word types in the corpus  æ•´ä¸ªè¯­æ–™ä¸­å•è¯çš„æ€»æ•°
 
-	// Number of documents assigned to a topic  ·ÖÅäµ½Ò»¸öÖ÷ÌâÎÄµµµÄÊıÁ¿
+	// Number of documents assigned to a topic  åˆ†é…åˆ°ä¸€ä¸ªä¸»é¢˜æ–‡æ¡£çš„æ•°é‡
 	public int[] docTopicCount;
 	// numTopics * vocabularySize matrix
 	// Given a topic: number of times a word type generated from the topic by
-	// the Dirichlet multinomial component  Ö÷Ìâ¶ÔÓ¦µÄµ¥´ÊÊıÁ¿  ¸Ãµ¥´ÊÊÇÓÉ¶àÏîÊ½·Ö²¼²úÉú
+	// the Dirichlet multinomial component  ä¸»é¢˜å¯¹åº”çš„å•è¯æ•°é‡  è¯¥å•è¯æ˜¯ç”±å¤šé¡¹å¼åˆ†å¸ƒäº§ç”Ÿ
 	public int[][] topicWordCountDMM;
 	// Total number of words generated from each topic by the Dirichlet
-	// multinomial component Ö÷Ìâ¶ÔÓ¦µÄ×ÜµÄµ¥´ÊÊıÁ¿  ÕâĞ©µ¥´ÊÊÇÓÉ¶àÏîÊ½·Ö²¼²úÉú
+	// multinomial component ä¸»é¢˜å¯¹åº”çš„æ€»çš„å•è¯æ•°é‡  è¿™äº›å•è¯æ˜¯ç”±å¤šé¡¹å¼åˆ†å¸ƒäº§ç”Ÿ
 	public int[] sumTopicWordCountDMM;
 	// numTopics * vocabularySize matrix
 	// Given a topic: number of times a word type generated from the topic by
-	// the latent feature component  µ¥´ÊÊÇÓÉÒşÌØÕ÷²¿·Ö²úÉú  Í³¼ÆÒ»¸öÖ÷Ìâ¶ÔÓ¦µÄµ¥´ÊÊıÁ¿
+	// the latent feature component  å•è¯æ˜¯ç”±éšç‰¹å¾éƒ¨åˆ†äº§ç”Ÿ  ç»Ÿè®¡ä¸€ä¸ªä¸»é¢˜å¯¹åº”çš„å•è¯æ•°é‡
 	public int[][] topicWordCountLF;
 	// Total number of words generated from each topic by the latent feature
-	// component  µ¥´ÊÓÉÒşÌØÕ÷²úÉú  Í³¼ÆÒ»¸öÖ÷Ìâ¶ÔÓ¦µÄ×Üµ¥´ÊÊıÁ¿
+	// component  å•è¯ç”±éšç‰¹å¾äº§ç”Ÿ  ç»Ÿè®¡ä¸€ä¸ªä¸»é¢˜å¯¹åº”çš„æ€»å•è¯æ•°é‡
 	public int[] sumTopicWordCountLF;
-	// Double array used to sample a topic   ¸ÅÂÊ ÓÃÓÚ³éÑù
+	// Double array used to sample a topic   æ¦‚ç‡ ç”¨äºæŠ½æ ·
 	public double[] multiPros;
 	// Path to the directory containing the corpus  
 	public String folderPath;
 	// Path to the topic modeling corpus
 	public String corpusPath;
 	public String vectorFilePath;
-	public double[][] wordVectors; // Vector representations for words  ´ÊÏòÁ¿±íÊ¾
-	public double[][] topicVectors;// Vector representations for topics Ö÷ÌâÏòÁ¿±íÊ¾
-	public int vectorSize; // Number of vector dimensions  ÏòÁ¿µÄÎ¬¶È
-	public double[][] dotProductValues;   //µã³Ë·¨µÄÖµ
-	public double[][] expDotProductValues;  //Ö¸Êı±ä»¯ºóµÄÖµ
-	public double[] sumExpValues; // Partition function values ÇóºÍµÄÖµ
+	public double[][] wordVectors; // Vector representations for words  è¯å‘é‡è¡¨ç¤º
+	public double[][] topicVectors;// Vector representations for topics ä¸»é¢˜å‘é‡è¡¨ç¤º
+	public int vectorSize; // Number of vector dimensions  å‘é‡çš„ç»´åº¦
+	public double[][] dotProductValues;   //ç‚¹ä¹˜æ³•çš„å€¼
+	public double[][] expDotProductValues;  //æŒ‡æ•°å˜åŒ–åçš„å€¼
+	public double[] sumExpValues; // Partition function values æ±‚å’Œçš„å€¼
 
-	public final double l2Regularizer = 0.01; // L2 regularizer value for learning topic vectors L2ÕıÔò»¯
-	public final double tolerance = 0.05; // Tolerance value for LBFGS convergence  LBFGSÊÕÁ²
+	public final double l2Regularizer = 0.01; // L2 regularizer value for learning topic vectors L2æ­£åˆ™åŒ–
+	public final double tolerance = 0.05; // Tolerance value for LBFGS convergence  LBFGSæ”¶æ•›
 	public String expName = "LFDMM";
 	public String orgExpName = "LFDMM";
 	public String tAssignsFilePath = "";
@@ -129,7 +129,7 @@ public class LFEPDP_CA
 		this(pathToCorpus, pathToWordVectorsFile, inNumTopics, inAlpha, inBeta, inLambda,
 				inNumInitIterations, inNumIterations, inTopWords, inExpName, "", inSaveStep);
 	}
-	//ÕâÀï³õÊ¼»¯
+	//è¿™é‡Œåˆå§‹åŒ–
 	public LFEPDP_CA(String pathToCorpus, String pathToWordVectorsFile, int inNumTopics,
 			double inAlpha, double inBeta, double inLambda, int inNumInitIterations,
 			int inNumIterations, int inTopWords, String inExpName, String pathToTAfile,
@@ -147,86 +147,86 @@ public class LFEPDP_CA
 		savestep = inSaveStep;
 		expName = inExpName;
 		orgExpName = expName;
-		//word2vecÓïÁÏ
+		//word2vecè¯­æ–™
 		vectorFilePath = pathToWordVectorsFile;
-		//ÓïÁÏµÄÂ·¾¶
+		//è¯­æ–™çš„è·¯å¾„
 		corpusPath = pathToCorpus;
 		folderPath = pathToCorpus.substring(0,
 				Math.max(pathToCorpus.lastIndexOf("/"), pathToCorpus.lastIndexOf("\\")) + 1);
-		//ÊäÈëÓïÁÏµÄÂ·¾¶
+		//è¾“å…¥è¯­æ–™çš„è·¯å¾„
 		System.out.println("Reading topic modeling corpus: " + pathToCorpus);
-		//´Ê×ª»¯Îª±àºÅ
+		//è¯è½¬åŒ–ä¸ºç¼–å·
 		word2IdVocabulary = new HashMap<String, Integer>();
-		//±àºÅ×ª»¯Îª´Ê
+		//ç¼–å·è½¬åŒ–ä¸ºè¯
 		id2WordVocabulary = new HashMap<Integer, String>();
-		//ÓïÁÏ
+		//è¯­æ–™
 		corpus = new ArrayList<List<Integer>>();
-		//ÎÄµµÊıÄ¿
+		//æ–‡æ¡£æ•°ç›®
 		numDocuments = 0;
-		//ÓïÁÏÖĞµ¥´ÊµÄÊıÄ¿
+		//è¯­æ–™ä¸­å•è¯çš„æ•°ç›®
 		numWordsInCorpus = 0;
-		//¶ÁÈ¡ÓïÁÏ
+		//è¯»å–è¯­æ–™
 		BufferedReader br = null;
 		try {
 			int indexWord = -1;
 			br = new BufferedReader(new FileReader(pathToCorpus));
-			//Ã¿Ò»ĞĞ±íÊ¾Ò»¸öÎÄµµ
+			//æ¯ä¸€è¡Œè¡¨ç¤ºä¸€ä¸ªæ–‡æ¡£
 			for (String doc; (doc = br.readLine()) != null;) {
 				if (doc.trim().length() == 0)
 					continue;
-				//ÎÄµµµ¥´Ê²ğ·Ö
+				//æ–‡æ¡£å•è¯æ‹†åˆ†
 				String[] words = doc.trim().split("\\s+");
-				//ÎÄµµ±íÊ¾³É¼¯ºÏ
+				//æ–‡æ¡£è¡¨ç¤ºæˆé›†åˆ
 				List<Integer> document = new ArrayList<Integer>();
-				//¶ÔÎÄµµµÄËùÓĞµ¥´Ê½øĞĞÑ­»·
+				//å¯¹æ–‡æ¡£çš„æ‰€æœ‰å•è¯è¿›è¡Œå¾ªç¯
 				for (String word : words) {
-					//ÎÄµµÖĞµ¥´Ê±àºÅ-----±àºÅÊÇÈ«¾Ö¶øÑÔ
+					//æ–‡æ¡£ä¸­å•è¯ç¼–å·-----ç¼–å·æ˜¯å…¨å±€è€Œè¨€
 					if (word2IdVocabulary.containsKey(word)) {
-						//Èç¹û°üº¬ÁË¸Ãµ¥´Ê£¬½«¸Ãµ¥´ÊÖ±½ÓÌí¼Óµ½ÎÄµµ¼¯ºÏÖĞ
+						//å¦‚æœåŒ…å«äº†è¯¥å•è¯ï¼Œå°†è¯¥å•è¯ç›´æ¥æ·»åŠ åˆ°æ–‡æ¡£é›†åˆä¸­
 						document.add(word2IdVocabulary.get(word));
 					}
 					else {
-						//¼Ó1±íÊ¾´Ó0¿ªÊ¼¶Ôµ¥´Ê½øĞĞ±àºÅ£¬²¢½«±àºÅ¶ÔÓ¦µÄµ¥´Ê¼ÓÈëµ½id2WordVocabulary
+						//åŠ 1è¡¨ç¤ºä»0å¼€å§‹å¯¹å•è¯è¿›è¡Œç¼–å·ï¼Œå¹¶å°†ç¼–å·å¯¹åº”çš„å•è¯åŠ å…¥åˆ°id2WordVocabulary
 						indexWord += 1;
 						word2IdVocabulary.put(word, indexWord);
 						id2WordVocabulary.put(indexWord, word);
-						//ÎÄµµÌí¼Ó¸Ãµ¥´Ê
+						//æ–‡æ¡£æ·»åŠ è¯¥å•è¯
 						document.add(indexWord);
 					}
 				}
-				//ÎÄµµÊıÄ¿++
+				//æ–‡æ¡£æ•°ç›®++
 				numDocuments++;
-				//ÓïÁÏÖĞËùÓĞµ¥´ÊµÄÊıÁ¿
+				//è¯­æ–™ä¸­æ‰€æœ‰å•è¯çš„æ•°é‡
 				numWordsInCorpus += document.size();
-				//½«ËùÓĞÎÄµµÌí¼Óµ½¼¯ºÏÖĞ
+				//å°†æ‰€æœ‰æ–‡æ¡£æ·»åŠ åˆ°é›†åˆä¸­
 				corpus.add(document);
 			}
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		//ÓïÁÏ²»ÖØ¸´µ¥´ÊµÄ×ÜÁ¿
+		//è¯­æ–™ä¸é‡å¤å•è¯çš„æ€»é‡
 		vocabularySize = word2IdVocabulary.size();
-		//Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÍ³¼Æ
+		//ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£ç»Ÿè®¡
 		docTopicCount = new int[numTopics];
-		//Ö÷Ìâ-µ¥´ÊÍ³¼Æ  À´×Ô¶àÏîÊ½·Ö²¼
+		//ä¸»é¢˜-å•è¯ç»Ÿè®¡  æ¥è‡ªå¤šé¡¹å¼åˆ†å¸ƒ
 		topicWordCountDMM = new int[numTopics][vocabularySize];
-		//Ö÷Ìâ¶ÔÓ¦µÄµ¥´Ê×ÜÊıÄ¿Í³¼Æ À´×Ô¶àÏîÊ½·Ö²¼
+		//ä¸»é¢˜å¯¹åº”çš„å•è¯æ€»æ•°ç›®ç»Ÿè®¡ æ¥è‡ªå¤šé¡¹å¼åˆ†å¸ƒ
 		sumTopicWordCountDMM = new int[numTopics];
-		//Ö÷Ìâ-µ¥´ÊÍ³¼Æ À´×ÔÓÚÒşÌØÕ÷·Ö²¼
+		//ä¸»é¢˜-å•è¯ç»Ÿè®¡ æ¥è‡ªäºéšç‰¹å¾åˆ†å¸ƒ
 		topicWordCountLF = new int[numTopics][vocabularySize];
-		//Ö÷Ìâ¶ÔÓ¦µÄµ¥´ÊÊıÄ¿×Ü¼Æ À´×ÔÓÚÒşÌØÕ÷
+		//ä¸»é¢˜å¯¹åº”çš„å•è¯æ•°ç›®æ€»è®¡ æ¥è‡ªäºéšç‰¹å¾
 		sumTopicWordCountLF = new int[numTopics];
-		//¶àÏîÊ½·Ö²¼µÄÏÈÑé
+		//å¤šé¡¹å¼åˆ†å¸ƒçš„å…ˆéªŒ
 		multiPros = new double[numTopics];
-		//ÏÈÑéÎª1/K,ºóÃæÒªÂÖÅÌ¶ÄµÄ£¬ÔÚ³õÊ¼»¯µÄÊ±ºò
+		//å…ˆéªŒä¸º1/K,åé¢è¦è½®ç›˜èµŒçš„ï¼Œåœ¨åˆå§‹åŒ–çš„æ—¶å€™
 		for (int i = 0; i < numTopics; i++) {
 			multiPros[i] = 1.0 / numTopics;
 		}
 
 		// alphaSum = numTopics * alpha;  
 		betaSum = vocabularySize * beta;  
-		//¶ÁÈ¡´ÊÏòÁ¿ word2vecÎÄ¼ş
+		//è¯»å–è¯å‘é‡ word2vecæ–‡ä»¶
 		readWordVectorsFile(vectorFilePath);
 		topicVectors = new double[numTopics][vectorSize];
 		dotProductValues = new double[numTopics][vocabularySize];
@@ -249,36 +249,36 @@ public class LFEPDP_CA
 		initialize();
 
 	}
-	//¶ÁÈ¡´ÊÏòÁ¿ÎÄ¼ş
+	//è¯»å–è¯å‘é‡æ–‡ä»¶
 	public void readWordVectorsFile(String pathToWordVectorsFile)
 			throws Exception
 	{
-		//Êä³öĞèÒª¶ÁÈ¡´ÊÏòÁ¿ÎÄ¼şµÄÏà¶ÔµØÖ·
+		//è¾“å‡ºéœ€è¦è¯»å–è¯å‘é‡æ–‡ä»¶çš„ç›¸å¯¹åœ°å€
 		System.out.println("Reading word vectors from word-vectors file " + pathToWordVectorsFile
 				+ "...");
 
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(pathToWordVectorsFile));
-			//ÒÔ¿Õ¸ñ·Ö¿ª
+			//ä»¥ç©ºæ ¼åˆ†å¼€
 			String[] elements = br.readLine().trim().split("\\s+");
-			//´ÊÏòÁ¿µÄ³¤¶È£¬ÕâÀï¼õ1ÊÇÒòÎªµÚÒ»Î¬¶ÈÊÇ´Ê
+			//è¯å‘é‡çš„é•¿åº¦ï¼Œè¿™é‡Œå‡1æ˜¯å› ä¸ºç¬¬ä¸€ç»´åº¦æ˜¯è¯
 			vectorSize = elements.length - 1;
-			//word2vecÏòÁ¿µÄÎ¬¶È£¬Ö»È¥ÓïÁÏÖĞÓĞµÄ´ÊvocabularySize
+			//word2vecå‘é‡çš„ç»´åº¦ï¼Œåªå»è¯­æ–™ä¸­æœ‰çš„è¯vocabularySize
 			wordVectors = new double[vocabularySize][vectorSize];
-			//µ¥´ÊÎªµÚÒ»Î¬¶È
+			//å•è¯ä¸ºç¬¬ä¸€ç»´åº¦
 			String word = elements[0];
-			//Èç¹ûÕâ¸ö´ÊÓïÔÚÓïÁÏÖĞµÄ»°£¬½«¸Ã´ÊµÄ´ÊÏòÁ¿´æÈëÊı×éwordVectors
+			//å¦‚æœè¿™ä¸ªè¯è¯­åœ¨è¯­æ–™ä¸­çš„è¯ï¼Œå°†è¯¥è¯çš„è¯å‘é‡å­˜å…¥æ•°ç»„wordVectors
 			if (word2IdVocabulary.containsKey(word)) {
 				for (int j = 0; j < vectorSize; j++) {
 					wordVectors[word2IdVocabulary.get(word)][j] = new Double(elements[j + 1]);
 				}
 			}
-			//¼ÌĞø¶ÁÎÄ±¾£¬ÉÏÃæÖ®ËùÒÔÒªÏÈ¶ÁÒ»ĞĞÊÇÎªÁË³õÊ¼»¯£¬»ñÈ¡´ÊÏòÁ¿µÄÎ¬¶È
+			//ç»§ç»­è¯»æ–‡æœ¬ï¼Œä¸Šé¢ä¹‹æ‰€ä»¥è¦å…ˆè¯»ä¸€è¡Œæ˜¯ä¸ºäº†åˆå§‹åŒ–ï¼Œè·å–è¯å‘é‡çš„ç»´åº¦
 			for (String line; (line = br.readLine()) != null;) {
 				elements = line.trim().split("\\s+");
 				word = elements[0];
-				//ÓïÁÏÖĞ³öÏÖµÄÃ¿¸öµ¥´ÊµÄ´ÊÏòÁ¿
+				//è¯­æ–™ä¸­å‡ºç°çš„æ¯ä¸ªå•è¯çš„è¯å‘é‡
 				if (word2IdVocabulary.containsKey(word)) {
 					for (int j = 0; j < vectorSize; j++) {
 						wordVectors[word2IdVocabulary.get(word)][j] = new Double(elements[j + 1]);
@@ -289,7 +289,7 @@ public class LFEPDP_CA
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		//·ÀÖ¹ÓïÁÏÖĞµÄ´ÊÔÚword2vecÎÄ¼şÖĞ²»´æÔÚ
+		//é˜²æ­¢è¯­æ–™ä¸­çš„è¯åœ¨word2vecæ–‡ä»¶ä¸­ä¸å­˜åœ¨
 		for (int i = 0; i < vocabularySize; i++) {
 			if (MatrixOps.absNorm(wordVectors[i]) == 0.0) {
 				System.out.println("The word \"" + id2WordVocabulary.get(i)
@@ -298,67 +298,67 @@ public class LFEPDP_CA
 			}
 		}
 	}
-	//³õÊ¼»¯·½·¨
+	//åˆå§‹åŒ–æ–¹æ³•
 	public void initialize()
 			throws IOException
 	{
-		//Ëæ»ú¶ÔÎÄµµ½øĞĞÖ÷Ìâ·ÖÅä
+		//éšæœºå¯¹æ–‡æ¡£è¿›è¡Œä¸»é¢˜åˆ†é…
 		System.out.println("Randomly initialzing topic assignments ...");
 		z = new  int[numDocuments];
-		z_words = new  int[numDocuments][];  //³õÊ¼»¯
-		//Ñ­»·Ã¿ÆªÎÄµµ
+		z_words = new  int[numDocuments][];  //åˆå§‹åŒ–
+		//å¾ªç¯æ¯ç¯‡æ–‡æ¡£
 		for (int docId = 0; docId < numDocuments; docId++) {
-			//»ùÓÚÂÖÅÌ¶Ä»ñÈ¡Ö÷Ìâ±àºÅ£¨Ç°ÃæÒÑ¾­³õÊ¼»¯ÁË£©£¬ÕâÀïmultiPros±ØĞëÓĞÖµ£¬·ñÔòÔò»á±¨´í
+			//åŸºäºè½®ç›˜èµŒè·å–ä¸»é¢˜ç¼–å·ï¼ˆå‰é¢å·²ç»åˆå§‹åŒ–äº†ï¼‰ï¼Œè¿™é‡ŒmultiProså¿…é¡»æœ‰å€¼ï¼Œå¦åˆ™åˆ™ä¼šæŠ¥é”™
 			int topic= FuncUtils.nextDiscrete(multiPros);
-			z[docId] = topic; //¸³ÖµÖ÷Ìâ
-			//·ÖÅäµ½¸ÃÖ÷ÌâµÄÎÄµµÊıÁ¿+1
+			z[docId] = topic; //èµ‹å€¼ä¸»é¢˜
+			//åˆ†é…åˆ°è¯¥ä¸»é¢˜çš„æ–‡æ¡£æ•°é‡+1
 			docTopicCount[topic] += 1;
-			//ÎÄµµµÄµ¥´Ê¸öÊı
+			//æ–‡æ¡£çš„å•è¯ä¸ªæ•°
 			int docSize = corpus.get(docId).size();
-			z_words[docId] = new int[docSize];  //¶ÔÃ¿ÆªÎÄµµÓÖÀ´ÁËÒ»´Î³õÊ¼»¯£¬Õâ¸öÒªÏ°¹ßÊ¹ÓÃËü
-			//Ñ­»·Ã¿¸öµ¥´Ê
+			z_words[docId] = new int[docSize];  //å¯¹æ¯ç¯‡æ–‡æ¡£åˆæ¥äº†ä¸€æ¬¡åˆå§‹åŒ–ï¼Œè¿™ä¸ªè¦ä¹ æƒ¯ä½¿ç”¨å®ƒ
+			//å¾ªç¯æ¯ä¸ªå•è¯
 			for (int j = 0; j < docSize; j++) {
-				//»ñÈ¡µ¥´Ê±àºÅ
+				//è·å–å•è¯ç¼–å·
 				int wordId = corpus.get(docId).get(j);
-				//Ëæ»ú²úÉúfalse or true,ÓÃÀ´³õÊ¼»¯¸ÃÎÄµµÊÇÀ´×ÔÓÚÒşÌØÕ÷»¹ÊÇ¶àÏîÊ½·Ö²¼
+				//éšæœºäº§ç”Ÿfalse or true,ç”¨æ¥åˆå§‹åŒ–è¯¥æ–‡æ¡£æ˜¯æ¥è‡ªäºéšç‰¹å¾è¿˜æ˜¯å¤šé¡¹å¼åˆ†å¸ƒ
 				boolean component = new Randoms().nextBoolean();
 				if (!component) { // Generated from the latent feature component
-					//Ö÷Ìâ-µ¥´ÊÊıÁ¿Ôö¼Ó1  ÓÉÒşÌØÕ÷Ö÷ÌâÉú³É
+					//ä¸»é¢˜-å•è¯æ•°é‡å¢åŠ 1  ç”±éšç‰¹å¾ä¸»é¢˜ç”Ÿæˆ
 					topicWordCountLF[topic][wordId] += 1;
-					// ¸ÃÖ÷ÌâÉú³ÉµÄµ¥´Ê×ÜÊıÔö¼Ó1 ÓÉÒşÌØÕ÷Ö÷ÌâÉú³É
+					// è¯¥ä¸»é¢˜ç”Ÿæˆçš„å•è¯æ€»æ•°å¢åŠ 1 ç”±éšç‰¹å¾ä¸»é¢˜ç”Ÿæˆ
 					sumTopicWordCountLF[topic] += 1;
-					z_words[docId][j] = 1;//1±íÊ¾À´×ÔÓÚÒşÌØÕ÷·Ö²¼
+					z_words[docId][j] = 1;//1è¡¨ç¤ºæ¥è‡ªäºéšç‰¹å¾åˆ†å¸ƒ
 				}
 				else {// Generated from the Dirichlet multinomial component
-					//Ö÷Ìâ-µ¥´ÊÊıÁ¿Ôö¼Ó1 ÓÉ¶àÏîÊ½·Ö²¼Éú³É
+					//ä¸»é¢˜-å•è¯æ•°é‡å¢åŠ 1 ç”±å¤šé¡¹å¼åˆ†å¸ƒç”Ÿæˆ
 					topicWordCountDMM[topic][wordId] += 1;
-					//Ö÷ÌâÉú³ÉµÄµ¥´Ê×ÜÊıÔö¼Ó1
+					//ä¸»é¢˜ç”Ÿæˆçš„å•è¯æ€»æ•°å¢åŠ 1
 					sumTopicWordCountDMM[topic] += 1;
-					z_words[docId][j] = 0; //±íÊ¾À´×ÔÓÚ¶àÏîÊ½·Ö²¼
+					z_words[docId][j] = 0; //è¡¨ç¤ºæ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒ
 				}
 			}
 		}
 	}
-	//Ä£ĞÍÍÆ¶Ï
+	//æ¨¡å‹æ¨æ–­
 	public void inference()
 			throws IOException
 	{
 		System.out.println("Running Gibbs sampling inference: ");
-		//³õÊ¼»¯µü´ú
+		//åˆå§‹åŒ–è¿­ä»£
 		for (int iter = 1; iter <= numInitIterations; iter++) {
 
 			System.out.println("\tInitial sampling iteration: " + (iter));
-			//µ¥´Ê³õÊ¼»¯µü´ú
+			//å•è¯åˆå§‹åŒ–è¿­ä»£
 			sampleSingleInitialIteration();
 		}
 		optimizeTopicVectors();
-		//ÕıÊ½µü´ú
+		//æ­£å¼è¿­ä»£
 		for (int iter = 1; iter <= numIterations; iter++) {
 			//			intialize_cluster(docTopicCount,topicWordCountDMM,topicWordCountLF,sumTopicWordCountDMM,sumTopicWordCountLF);
 			iter_topic.add(iter + "\t" + numTopics);
 			System.out.println("\tLFDMM sampling iteration: " + (iter)+"\tnumber of topic:"+numTopics);
 			optimizeTopicVectors();
-			//³éÈ¡Ö÷Ìâ
+			//æŠ½å–ä¸»é¢˜
 			sampleSingleIteration();
 			defragment();
 			if ((savestep > 0) && (iter % savestep == 0) && (iter < numIterations)) {
@@ -368,15 +368,15 @@ public class LFEPDP_CA
 			}
 		}
 		expName = orgExpName;
-		//±£´æÄ£ĞÍÏà¹Ø²ÎÊı
+		//ä¿å­˜æ¨¡å‹ç›¸å…³å‚æ•°
 		writeParameters();
 		System.out.println("Writing output from the last sample ...");
-		//±£´æĞÅÏ¢
+		//ä¿å­˜ä¿¡æ¯
 		write();
 
 		System.out.println("Sampling completed!");
 	}
-	//ÓÅ»¯Ö÷ÌâÏòÁ¿
+	//ä¼˜åŒ–ä¸»é¢˜å‘é‡
 	public void optimizeTopicVectors()
 	{
 		System.out.println("\t\tEstimating topic vectors ...");
@@ -394,15 +394,15 @@ public class LFEPDP_CA
 				while (check) {
 					double l2Value = l2Regularizer * rate;
 					try {
-						//Ö÷ÌâÏòÁ¿±íÊ¾  Ö÷Ìâ°üº¬µÄµ¥´Ê¸öÊı  ´ÊÏòÁ¿ ÕıÔò»¯Öµ(ÕâÀïÊÇ´«Èë²ÎÊı-----ÒÔ±ãÖ´ĞĞTopicVectorOptimizer)
+						//ä¸»é¢˜å‘é‡è¡¨ç¤º  ä¸»é¢˜åŒ…å«çš„å•è¯ä¸ªæ•°  è¯å‘é‡ æ­£åˆ™åŒ–å€¼(è¿™é‡Œæ˜¯ä¼ å…¥å‚æ•°-----ä»¥ä¾¿æ‰§è¡ŒTopicVectorOptimizer)
 						TopicVectorOptimizer optimizer = new TopicVectorOptimizer(
 								topicVectors[topic], topicWordCountLF[topic], wordVectors, l2Value);
-						//Í¨¹ıLBFGSÓÅ»¯
+						//é€šè¿‡LBFGSä¼˜åŒ–
 						Optimizer gd = new LBFGS(optimizer, tolerance);
 						gd.optimize(600);
-						//ĞèÒªÓÅ»¯µÄ²ÎÊı
+						//éœ€è¦ä¼˜åŒ–çš„å‚æ•°
 						optimizer.getParameters(topicVectors[topic]);
-						//ÊäÈëµÄÊÇÁ½¸öÌØÕ÷µÄ³Ë»ıÒÔ¼°Æä¼ÓºÍ-----Õë¶ÔÃ¿¸öÖ÷Ìâ¼ÆËãÒ»¸öÏòÁ¿Öµ£¨ÎªÁË¸üĞÂÖ÷ÌâÊ¹ÓÃ£©
+						//è¾“å…¥çš„æ˜¯ä¸¤ä¸ªç‰¹å¾çš„ä¹˜ç§¯ä»¥åŠå…¶åŠ å’Œ-----é’ˆå¯¹æ¯ä¸ªä¸»é¢˜è®¡ç®—ä¸€ä¸ªå‘é‡å€¼ï¼ˆä¸ºäº†æ›´æ–°ä¸»é¢˜ä½¿ç”¨ï¼‰
 						sumExpValues[topic] = optimizer.computePartitionFunction(
 								dotProductValues[topic], expDotProductValues[topic]);
 						check = false;
@@ -429,7 +429,7 @@ public class LFEPDP_CA
 			}
 		});
 	}
-	//ÓÅ»¯Ä³Ò»¸öÖ÷ÌâµÄÏòÁ¿
+	//ä¼˜åŒ–æŸä¸€ä¸ªä¸»é¢˜çš„å‘é‡
 	public  void optimizeTopicVectorsKK(int k)
 	{
 		System.out.println("\t\tEstimating new topic vectors ...");
@@ -438,15 +438,15 @@ public class LFEPDP_CA
 		while (check) {
 			double l2Value = l2Regularizer * rate;
 			try {
-				//Ö÷ÌâÏòÁ¿±íÊ¾  Ö÷Ìâ°üº¬µÄµ¥´Ê¸öÊı  ´ÊÏòÁ¿ ÕıÔò»¯Öµ(ÕâÀïÊÇ´«Èë²ÎÊı-----ÒÔ±ãÖ´ĞĞTopicVectorOptimizer)
+				//ä¸»é¢˜å‘é‡è¡¨ç¤º  ä¸»é¢˜åŒ…å«çš„å•è¯ä¸ªæ•°  è¯å‘é‡ æ­£åˆ™åŒ–å€¼(è¿™é‡Œæ˜¯ä¼ å…¥å‚æ•°-----ä»¥ä¾¿æ‰§è¡ŒTopicVectorOptimizer)
 				TopicVectorOptimizer optimizer = new TopicVectorOptimizer(
 						topicVectors[k], topicWordCountLF[k], wordVectors, l2Value);
-				//Í¨¹ıLBFGSÓÅ»¯
+				//é€šè¿‡LBFGSä¼˜åŒ–
 				Optimizer gd = new LBFGS(optimizer, tolerance);
 				gd.optimize(600);
-				//ĞèÒªÓÅ»¯µÄ²ÎÊı
+				//éœ€è¦ä¼˜åŒ–çš„å‚æ•°
 				optimizer.getParameters(topicVectors[k]);
-				//ÊäÈëµÄÊÇÁ½¸öÌØÕ÷µÄ³Ë»ıÒÔ¼°Æä¼ÓºÍ-----Õë¶ÔÃ¿¸öÖ÷Ìâ¼ÆËãÒ»¸öÏòÁ¿Öµ£¨ÎªÁË¸üĞÂÖ÷ÌâÊ¹ÓÃ£©
+				//è¾“å…¥çš„æ˜¯ä¸¤ä¸ªç‰¹å¾çš„ä¹˜ç§¯ä»¥åŠå…¶åŠ å’Œ-----é’ˆå¯¹æ¯ä¸ªä¸»é¢˜è®¡ç®—ä¸€ä¸ªå‘é‡å€¼ï¼ˆä¸ºäº†æ›´æ–°ä¸»é¢˜ä½¿ç”¨ï¼‰
 				sumExpValues[k] = optimizer.computePartitionFunction(
 						dotProductValues[k], expDotProductValues[k]);
 				check = false;
@@ -472,17 +472,17 @@ public class LFEPDP_CA
 		}
 	}
 	/**
-	 * @param ÊäÈë²ÎÊıÎª(1)Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÁ¿Í³¼Æ;(2)Ö÷Ìâ°üº¬µ¥´ÊµÄÍ³¼Æ£¬ÕâÀï°üÀ¨Ö÷Ìâ°üº¬µÄÒşÌØÕ÷ºÍ¶àÏîÊ½·Ö²¼Éú³É£¨3£©Ö÷Ìâ°üº¬µÄ×Üµ¥´ÊÍ³¼Æ£¬°üÀ¨¶àÏîÊ½
-	 * ·Ö²¼Éú³ÉºÍÒşÌØÕ÷·Ö²¼Éú³É
+	 * @param è¾“å…¥å‚æ•°ä¸º(1)ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°é‡ç»Ÿè®¡;(2)ä¸»é¢˜åŒ…å«å•è¯çš„ç»Ÿè®¡ï¼Œè¿™é‡ŒåŒ…æ‹¬ä¸»é¢˜åŒ…å«çš„éšç‰¹å¾å’Œå¤šé¡¹å¼åˆ†å¸ƒç”Ÿæˆï¼ˆ3ï¼‰ä¸»é¢˜åŒ…å«çš„æ€»å•è¯ç»Ÿè®¡ï¼ŒåŒ…æ‹¬å¤šé¡¹å¼
+	 * åˆ†å¸ƒç”Ÿæˆå’Œéšç‰¹å¾åˆ†å¸ƒç”Ÿæˆ
 	 * @return
 	 * @Date: 2018-3-29
 	 * @Author: yang qian 
 	 * @Description: remove a topic
 	 */
-	//ÒÆ³ıÖ÷Ìâ,Ö÷ÌâÖØĞÂ±àºÅ£¬½øĞĞÖØĞÂ·ÖÅä------ÕâÀïÖ÷ÌâÏòÁ¿µÄÓÅ»¯±ØĞëÒ²ÔÚÕâÀï¸üĞÂ
+	//ç§»é™¤ä¸»é¢˜,ä¸»é¢˜é‡æ–°ç¼–å·ï¼Œè¿›è¡Œé‡æ–°åˆ†é…------è¿™é‡Œä¸»é¢˜å‘é‡çš„ä¼˜åŒ–å¿…é¡»ä¹Ÿåœ¨è¿™é‡Œæ›´æ–°
 	public void intialize_cluster(int[] docTopicCount,int[][] topicWordCountDMM,int[][] topicWordCountLF, 
 			int[] sumTopicWordCountDMM, int[] sumTopicWordCountLF){
-		//Ö÷ÌâÖØĞÂ·ÖÅä
+		//ä¸»é¢˜é‡æ–°åˆ†é…
 		HashMap<Integer, Integer> countk = new HashMap<Integer, Integer>(); 
 		int j=-1;
 		for(int i=0;i<numDocuments;i++){
@@ -493,19 +493,19 @@ public class LFEPDP_CA
 				countk.put(z[i], j);
 			}
 		}
-		//Ö÷ÌâÊıÄ¿»á·¢Éú±ä»¯
+		//ä¸»é¢˜æ•°ç›®ä¼šå‘ç”Ÿå˜åŒ–
 		numTopics=countk.keySet().size();
 		//		System.out.println(numTopics);
-		//Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÁ¿
+		//ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°é‡
 		for(int i=0;i<numDocuments;i++){
-			z[i]=countk.get(z[i]); //MapµÄvalueÖµ
+			z[i]=countk.get(z[i]); //Mapçš„valueå€¼
 		}
-		this.docTopicCount = new int [numTopics]; //Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÁ¿
-		this.topicWordCountDMM = new int [numTopics][vocabularySize]; //Ö÷Ìâz¶ÔÓ¦µÄµ¥´ÊvµÄÊıÁ¿£¬À´×ÔÓÚ¶àÏîÊ½·Ö²¼
-		this.topicWordCountLF = new int [numTopics][vocabularySize];; //Ö÷Ìâz¶ÔÓ¦µÄµ¥´ÊvµÄÊıÁ¿£¬À´×ÔÓÚ¶àÏîÊ½·Ö²¼
+		this.docTopicCount = new int [numTopics]; //ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°é‡
+		this.topicWordCountDMM = new int [numTopics][vocabularySize]; //ä¸»é¢˜zå¯¹åº”çš„å•è¯vçš„æ•°é‡ï¼Œæ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒ
+		this.topicWordCountLF = new int [numTopics][vocabularySize];; //ä¸»é¢˜zå¯¹åº”çš„å•è¯vçš„æ•°é‡ï¼Œæ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒ
 		this.sumTopicWordCountDMM = new int[numTopics];
 		this.sumTopicWordCountLF = new int[numTopics];
-		//Ñ­»·Ã¿¸öÖ÷Ìâ£¬×öÏà¹Ø³õÊ¼»¯¸³Öµ
+		//å¾ªç¯æ¯ä¸ªä¸»é¢˜ï¼Œåšç›¸å…³åˆå§‹åŒ–èµ‹å€¼
 		for(int k = 0; k < numTopics; k++){
 			this.docTopicCount[k] = 0;
 			this.sumTopicWordCountDMM[k] = 0;
@@ -515,10 +515,10 @@ public class LFEPDP_CA
 				this.topicWordCountLF[k][t] = 0;
 			}
 		}
-		//ÖØĞÂÍ³¼ÆÖµ
+		//é‡æ–°ç»Ÿè®¡å€¼
 		for(int dIndex = 0; dIndex < numDocuments; dIndex++){
 			List<Integer> document = corpus.get(dIndex); 
-			int docSize = document.size();  //»ñÈ¡ÎÄµµµÄµ¥´ÊÊıÁ¿
+			int docSize = document.size();  //è·å–æ–‡æ¡£çš„å•è¯æ•°é‡
 			int topic = z[dIndex];
 			this.docTopicCount[topic] ++ ;
 			for(int wIndex = 0; wIndex < docSize; wIndex++){
@@ -534,27 +534,27 @@ public class LFEPDP_CA
 				}
 			}
 		}
-		//ÖØĞÂ³õÊ¼»¯,Ö÷ÌâÏòÁ¿
+		//é‡æ–°åˆå§‹åŒ–,ä¸»é¢˜å‘é‡
 		this.topicVectors = new double[numTopics][vectorSize];
 	}
 	/**
-	 * @param ½«Ö÷ÌâÖĞ²»°üº¬ÎÄµµµÄÖ÷ÌâÒÆ³ı
+	 * @param å°†ä¸»é¢˜ä¸­ä¸åŒ…å«æ–‡æ¡£çš„ä¸»é¢˜ç§»é™¤
 	 * @return
 	 * @Date: 2018-3-29
 	 * @Author: yang qian 
 	 * @Description: remove a topic
 	 */
 	public void removeDocument(int docID){
-		//»ñÈ¡ÎÄµµµÄËùÓĞµ¥´Ê
+		//è·å–æ–‡æ¡£çš„æ‰€æœ‰å•è¯
 		List<Integer> document = corpus.get(docID);
-		//ÎÄµµµÄ³¤¶È
+		//æ–‡æ¡£çš„é•¿åº¦
 		int docSize = document.size();
-		//ÎÄµµµÄ³õÊ¼Ö÷Ìâ·Ö²¼£¬½ÓÏÂÀ´ÊÇÒÆ³ı¸Ãµ¥´Ê
+		//æ–‡æ¡£çš„åˆå§‹ä¸»é¢˜åˆ†å¸ƒï¼Œæ¥ä¸‹æ¥æ˜¯ç§»é™¤è¯¥å•è¯
 		int topic = z[docID];
-		//Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÄ¿¼õ1
+		//ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°ç›®å‡1
 		docTopicCount[topic] = docTopicCount[topic] - 1;
 		for (int wIndex = 0; wIndex < docSize; wIndex++) {
-			//»ñÈ¡µ¥´ÊµÄid
+			//è·å–å•è¯çš„id
 			int word = document.get(wIndex);// wordId
 			int subtopic =z_words[docID][wIndex] ;
 			if (subtopic == 1) {
@@ -588,7 +588,7 @@ public class LFEPDP_CA
 			}
 		}
 		numTopics = newK;
-		//ÕâÀï»¹ÒªÖØĞÂ´¦ÀíÎÄµµ¶ÔÓ¦µÄÖ÷Ìâ
+		//è¿™é‡Œè¿˜è¦é‡æ–°å¤„ç†æ–‡æ¡£å¯¹åº”çš„ä¸»é¢˜
 		for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
 			z[dIndex] = kOldToKNew[z[dIndex]];
 		}
@@ -613,7 +613,7 @@ public class LFEPDP_CA
 		arr[arg1] = arr[arg2]; 
 		arr[arg2] = t; 
 	}
-	//½«Êı×é·Å´ó£¬È·±£²»Ô½½ç
+	//å°†æ•°ç»„æ”¾å¤§ï¼Œç¡®ä¿ä¸è¶Šç•Œ
 	public  int[] ensureCapacity(int[] arr,int i) {
 		int length = arr.length;
 		int[] arr2 = new int[length+i];
@@ -621,9 +621,9 @@ public class LFEPDP_CA
 		return arr2;
 	}
 	public  int[][] ensureCapacity(int[][] array,int i,int j) {  
-		int[][] arr = new int[array.length +i][array[0].length +j];       //À©Õ¹  
+		int[][] arr = new int[array.length +i][array[0].length +j];       //æ‰©å±•  
 		for(int c = 0; c< array.length; c++) {  
-			System.arraycopy(array[c], 0, arr[c], 0, array[c].length);  //Êı×é¿½±´  
+			System.arraycopy(array[c], 0, arr[c], 0, array[c].length);  //æ•°ç»„æ‹·è´  
 		}  
 		return arr;  
 	} 
@@ -634,34 +634,34 @@ public class LFEPDP_CA
 		return arr2;
 	}
 	public  double[][] ensureCapacity(double[][] array,int i,int j) {  
-		double[][] arr = new double[array.length +i][array[0].length +j];       //À©Õ¹  
+		double[][] arr = new double[array.length +i][array[0].length +j];       //æ‰©å±•  
 		for(int c = 0; c< array.length; c++) {  
-			System.arraycopy(array[c], 0, arr[c], 0, array[c].length);  //Êı×é¿½±´  
+			System.arraycopy(array[c], 0, arr[c], 0, array[c].length);  //æ•°ç»„æ‹·è´  
 		}  
 		return arr;  
 	} 
-	//Ã¿Ò»´ú·ÖÅäÖ÷Ìâ
+	//æ¯ä¸€ä»£åˆ†é…ä¸»é¢˜
 	public void sampleSingleIteration()
 	{
-		//¶ÔÃ¿Ò»ÆªÎÄµµ½øĞĞÑ­»·
+		//å¯¹æ¯ä¸€ç¯‡æ–‡æ¡£è¿›è¡Œå¾ªç¯
 		for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
-			//			System.out.println("µ±Ç°Ö´ĞĞµÄÎÄµµÊÇ£º"+dIndex);
+			//			System.out.println("å½“å‰æ‰§è¡Œçš„æ–‡æ¡£æ˜¯ï¼š"+dIndex);
 			double[] prob = new double[numTopics+1];
-			//»ñÈ¡ÎÄµµµÄËùÓĞµ¥´Ê
+			//è·å–æ–‡æ¡£çš„æ‰€æœ‰å•è¯
 			List<Integer> document = corpus.get(dIndex);
-			//ÎÄµµµÄ³¤¶È
+			//æ–‡æ¡£çš„é•¿åº¦
 			int docSize = document.size();
-			//ÎÄµµµÄ³õÊ¼Ö÷Ìâ·Ö²¼£¬½ÓÏÂÀ´ÊÇÒÆ³ı¸Ãµ¥´Ê
+			//æ–‡æ¡£çš„åˆå§‹ä¸»é¢˜åˆ†å¸ƒï¼Œæ¥ä¸‹æ¥æ˜¯ç§»é™¤è¯¥å•è¯
 			int topic = z[dIndex];
-			//Ö÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÄ¿¼õ1
+			//ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°ç›®å‡1
 			docTopicCount[topic] = docTopicCount[topic] - 1;
 			if (docTopicCount[topic] < 0) {
 				System.out.println("docTopicCount < 0 "+topic +" " +docTopicCount[topic]);
 				defragment();
 			}
-			//½ÓÏÂÀ´¶Ô¶Ô¸öµ¥´Ê½øĞĞÑ­»·£¬×öÏà¹Øµ¥´ÊµÄÍ³¼Æ¹¤×÷
+			//æ¥ä¸‹æ¥å¯¹å¯¹ä¸ªå•è¯è¿›è¡Œå¾ªç¯ï¼Œåšç›¸å…³å•è¯çš„ç»Ÿè®¡å·¥ä½œ
 			for (int wIndex = 0; wIndex < docSize; wIndex++) {
-				//»ñÈ¡µ¥´ÊµÄid
+				//è·å–å•è¯çš„id
 				int word = document.get(wIndex);// wordId
 				int subtopic =z_words[dIndex][wIndex] ;
 				if (subtopic == 1) {
@@ -673,12 +673,12 @@ public class LFEPDP_CA
 					sumTopicWordCountDMM[topic] -= 1;
 				}
 			}
-			// ¶ÔÎÄµµµ¥´ÊµÄÖ÷Ìâ½øĞĞ³éÑù,¼ÆËã¸ÅÂÊ£¬ÕâÀïĞèÒªÖ÷ÌâĞÂÖ÷Ìâ²úÉúµÄ¸ÅÂÊÔõÃ´¼ÆËã
+			// å¯¹æ–‡æ¡£å•è¯çš„ä¸»é¢˜è¿›è¡ŒæŠ½æ ·,è®¡ç®—æ¦‚ç‡ï¼Œè¿™é‡Œéœ€è¦ä¸»é¢˜æ–°ä¸»é¢˜äº§ç”Ÿçš„æ¦‚ç‡æ€ä¹ˆè®¡ç®—
 			for (int tIndex = 0; tIndex < numTopics; tIndex++) {
 				prob[tIndex] = docTopicCount[tIndex]/(numDocuments - 1 + alpha);
 				for (int wIndex = 0; wIndex < docSize; wIndex++) {
 					int word = document.get(wIndex);
-					//ÒÀ¾İ¹«Ê½½øĞĞ¼ÆËã£¬²»¹ıÂÛÎÄ¹«Ê½ÓĞÎÊÌâ  N_{d,w}+K_{d,w}µÄ´Î·½ÓĞÎÊÌâ£¬ÍÆÀíµÄ¹«Ê½Ó¦¸ÃÊÇÕâÑùµÄ
+					//ä¾æ®å…¬å¼è¿›è¡Œè®¡ç®—ï¼Œä¸è¿‡è®ºæ–‡å…¬å¼æœ‰é—®é¢˜  N_{d,w}+K_{d,w}çš„æ¬¡æ–¹æœ‰é—®é¢˜ï¼Œæ¨ç†çš„å…¬å¼åº”è¯¥æ˜¯è¿™æ ·çš„
 					prob[tIndex] *= (lambda * expDotProductValues[tIndex][word]
 							/ sumExpValues[tIndex] + (1 - lambda)
 							* (topicWordCountDMM[tIndex][word] + beta)
@@ -688,38 +688,38 @@ public class LFEPDP_CA
 
 			prob[numTopics]= (alpha) / (numDocuments - 1 + alpha);
 			double valueOfRule = 1.0;
-			//¶ÔÃ¿¸öµ¥´Ê½øĞĞÑ­»·
+			//å¯¹æ¯ä¸ªå•è¯è¿›è¡Œå¾ªç¯
 			for(int wIndex = 0; wIndex < docSize; wIndex++){
-				valueOfRule *= 1.0/vocabularySize;  //Èç¹ûÊÇĞÂÖ÷Ìâ»á·¢ÏÖÒşÌØÕ÷ºÍ¶àÏîÊ½·Ö²¼Éú³ÉµÄ¸ÅÂÊÊÇÒ»ÑùµÄ
+				valueOfRule *= 1.0/vocabularySize;  //å¦‚æœæ˜¯æ–°ä¸»é¢˜ä¼šå‘ç°éšç‰¹å¾å’Œå¤šé¡¹å¼åˆ†å¸ƒç”Ÿæˆçš„æ¦‚ç‡æ˜¯ä¸€æ ·çš„
 			}
 			prob[numTopics] = prob[numTopics] * valueOfRule ;
-			//»ùÓÚÂÖÅÌ¶ÄÑ¡ÔñÊÇÒÑÓĞµÄ´Ø»¹ÊÇ¾ÉµÄ´Ø
-			topic = FuncUtils.nextDiscrete(prob);  //ÂÖÅÌ¶ÄÃ»ÓĞÎÊÌâÎªÊ²Ã´»á³öÏÖÔ½½çµÄÇé¿öÄØ
-			z[dIndex] = topic;  //ÎÄµµ¶ÔÓ¦µÄĞÂÖ÷Ìâ
-			//ÅĞ¶Ï¸ÃÖ÷ÌâÊÇ·ñÎªĞÂÖ÷Ìâ
+			//åŸºäºè½®ç›˜èµŒé€‰æ‹©æ˜¯å·²æœ‰çš„ç°‡è¿˜æ˜¯æ—§çš„ç°‡
+			topic = FuncUtils.nextDiscrete(prob);  //è½®ç›˜èµŒæ²¡æœ‰é—®é¢˜ä¸ºä»€ä¹ˆä¼šå‡ºç°è¶Šç•Œçš„æƒ…å†µå‘¢
+			z[dIndex] = topic;  //æ–‡æ¡£å¯¹åº”çš„æ–°ä¸»é¢˜
+			//åˆ¤æ–­è¯¥ä¸»é¢˜æ˜¯å¦ä¸ºæ–°ä¸»é¢˜
 			if(topic < numTopics){
 				docTopicCount[topic] += 1;
-				//¿ªÊ¼×öÏà¹ØÍ³¼Æ
+				//å¼€å§‹åšç›¸å…³ç»Ÿè®¡
 				for (int wIndex = 0; wIndex < docSize; wIndex++) {
 					int word = document.get(wIndex);
-					//ÕâÀïÊÇ¶Ôs_{di}µÄ³éÑù£¬²ÉÓÃµÄÊÇÖ±½Ó¼ÆËã£¬²¢Ã»ÓĞÊ¹ÓÃÂÖÅÌ¶Ä
+					//è¿™é‡Œæ˜¯å¯¹s_{di}çš„æŠ½æ ·ï¼Œé‡‡ç”¨çš„æ˜¯ç›´æ¥è®¡ç®—ï¼Œå¹¶æ²¡æœ‰ä½¿ç”¨è½®ç›˜èµŒ
 					if (lambda * expDotProductValues[topic][word] / sumExpValues[topic] > (1 - lambda)
 							* (topicWordCountDMM[topic][word] + beta)
 							/ (sumTopicWordCountDMM[topic] + betaSum)) {
-						//À´×ÔÒşÌØÕ÷µÄÏà¹ØÍ³¼Æ
+						//æ¥è‡ªéšç‰¹å¾çš„ç›¸å…³ç»Ÿè®¡
 						topicWordCountLF[topic][word] += 1;
 						sumTopicWordCountLF[topic] += 1;
 						z_words[dIndex][wIndex]=1;
 					}
 					else {
-						//À´×Ô¶àÏîÊ½·Ö²¼µÄÏà¹ØÍ³¼Æ
+						//æ¥è‡ªå¤šé¡¹å¼åˆ†å¸ƒçš„ç›¸å…³ç»Ÿè®¡
 						topicWordCountDMM[topic][word] += 1;
 						sumTopicWordCountDMM[topic] += 1;
 						z_words[dIndex][wIndex]=0;
 					}
 				}
 			}else if (topic == numTopics) {   // a new topic is created
-				numTopics++;  //Ö÷ÌâÊıÁ¿Ôö¶à
+				numTopics++;  //ä¸»é¢˜æ•°é‡å¢å¤š
 				docTopicCount= ensureCapacity(docTopicCount,1);
 				topicWordCountDMM = ensureCapacity(topicWordCountDMM,1,0);
 				sumTopicWordCountDMM = ensureCapacity(sumTopicWordCountDMM,1);
@@ -730,64 +730,64 @@ public class LFEPDP_CA
 				expDotProductValues = ensureCapacity(expDotProductValues,1,0);
 				sumExpValues = ensureCapacity(sumExpValues,1);
 				docTopicCount[numTopics-1] += 1;
-				//ÕâÀïĞÂÖ÷ÌâÅĞ¶ÏÃ¿¸öµ¥´ÊÊÇÀ´×ÔÓÚ¶àÏîÊ½·Ö²¼»¹ÊÇÒşÌØÕ÷·Ö²¼
+				//è¿™é‡Œæ–°ä¸»é¢˜åˆ¤æ–­æ¯ä¸ªå•è¯æ˜¯æ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒè¿˜æ˜¯éšç‰¹å¾åˆ†å¸ƒ
 				for (int wIndex = 0; wIndex < docSize; wIndex++) {
 					int word = document.get(wIndex);
-					//ÕâÀïÊÇ¶Ôs_{di}µÄ³éÑù£¬²ÉÓÃµÄÊÇÖ±½Ó¼ÆËã£¬²¢Ã»ÓĞÊ¹ÓÃÂÖÅÌ¶Ä
+					//è¿™é‡Œæ˜¯å¯¹s_{di}çš„æŠ½æ ·ï¼Œé‡‡ç”¨çš„æ˜¯ç›´æ¥è®¡ç®—ï¼Œå¹¶æ²¡æœ‰ä½¿ç”¨è½®ç›˜èµŒ
 					if (lambda * 1/vocabularySize > (1 - lambda)
 							* 1/vocabularySize ) {
-						//À´×ÔÒşÌØÕ÷µÄÏà¹ØÍ³¼Æ
+						//æ¥è‡ªéšç‰¹å¾çš„ç›¸å…³ç»Ÿè®¡
 						topicWordCountLF[topic][word] += 1;
 						sumTopicWordCountLF[topic] += 1;
 						z_words[dIndex][wIndex]=1;
 					}else {
-						//À´×Ô¶àÏîÊ½·Ö²¼µÄÏà¹ØÍ³¼Æ
+						//æ¥è‡ªå¤šé¡¹å¼åˆ†å¸ƒçš„ç›¸å…³ç»Ÿè®¡
 						topicWordCountDMM[topic][word] += 1;
 						sumTopicWordCountDMM[topic] += 1;
 						z_words[dIndex][wIndex]=0;
 					}
-					optimizeTopicVectorsKK(topic);  //Èç¹û²úÉúĞÂÖ÷ÌâÔòĞèÒªÓÅ»¯Ò»ÏÂ
+					optimizeTopicVectorsKK(topic);  //å¦‚æœäº§ç”Ÿæ–°ä¸»é¢˜åˆ™éœ€è¦ä¼˜åŒ–ä¸€ä¸‹
 				}
 				
 			}
 		}
 	}
-	//³õÊ¼»¯µü´ú
+	//åˆå§‹åŒ–è¿­ä»£
 	public void sampleSingleInitialIteration()
 	{
-		//¶ÔÃ¿ÆªÎÄµµÑ­»·
+		//å¯¹æ¯ç¯‡æ–‡æ¡£å¾ªç¯
 		for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
-			//»ñÈ¡ÎÄµµ
+			//è·å–æ–‡æ¡£
 			List<Integer> document = corpus.get(dIndex);
-			//ÎÄµµµÄ³¤¶È£¬¼´ÎÄµµ°üº¬µÄËùÓĞµ¥´ÊÊı
+			//æ–‡æ¡£çš„é•¿åº¦ï¼Œå³æ–‡æ¡£åŒ…å«çš„æ‰€æœ‰å•è¯æ•°
 			int docSize = document.size();
-			//ÎÄµµÖ÷Ìâ·ÖÅä£¬ÕâÀïĞèÒªÀí½âÒ»ÏÂ
+			//æ–‡æ¡£ä¸»é¢˜åˆ†é…ï¼Œè¿™é‡Œéœ€è¦ç†è§£ä¸€ä¸‹
 			int topic = z[dIndex];
-			//Ö÷ÌâÉú³ÉµÄÎÄµµÍ³¼Æ£¬ÒÆ³ı¸ÃÎÄµµ
+			//ä¸»é¢˜ç”Ÿæˆçš„æ–‡æ¡£ç»Ÿè®¡ï¼Œç§»é™¤è¯¥æ–‡æ¡£
 			docTopicCount[topic] = docTopicCount[topic] - 1;
-			//Ñ­»·ÎÄµµµÄÃ¿Ò»¸öµ¥´Ê
+			//å¾ªç¯æ–‡æ¡£çš„æ¯ä¸€ä¸ªå•è¯
 			for (int wIndex = 0; wIndex < docSize; wIndex++) {
-				//»ñÈ¡µ¥´ÊµÄ±àºÅ
+				//è·å–å•è¯çš„ç¼–å·
 				int word = document.get(wIndex);
-				//»ñÈ¡subtopic
+				//è·å–subtopic
 				int subtopic = z_words[dIndex][wIndex];
-				//Èç¹ûsubtopicºÍtopicÏàÍ¬£¬À´×ÔÓÚÒş±äÁ¿£¬·ñÔòÀ´×ÔÓÚ¶àÏîÊ½·Ö²¼
+				//å¦‚æœsubtopicå’Œtopicç›¸åŒï¼Œæ¥è‡ªäºéšå˜é‡ï¼Œå¦åˆ™æ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒ
 				if (subtopic == 1) {
-					//Ö÷Ìâ-µ¥´Ê ÊıÄ¿¼õ1
+					//ä¸»é¢˜-å•è¯ æ•°ç›®å‡1
 					topicWordCountLF[topic][word] -= 1;
-					//Ö÷Ìâ¶ÔÓ¦µÄ×ÜµÄµ¥´ÊÊı-1
+					//ä¸»é¢˜å¯¹åº”çš„æ€»çš„å•è¯æ•°-1
 					sumTopicWordCountLF[topic] -= 1;
 				}
 				else {
-					//Ö÷Ìâ-µ¥´Ê ÊıÄ¿¼õ1
+					//ä¸»é¢˜-å•è¯ æ•°ç›®å‡1
 					topicWordCountDMM[topic][word] -= 1;
-					//Ö÷Ìâ¶ÔÓ¦µÄ×ÜµÄµ¥´ÊÊı-1
+					//ä¸»é¢˜å¯¹åº”çš„æ€»çš„å•è¯æ•°-1
 					sumTopicWordCountDMM[topic] -= 1;
 				}
 			}
-			// ³éÈ¡ÎÄµµËùÊôµÄÖ÷Ìâ£¬¼ÆËã¸ÃÆªÎÄµµÊôÓÚÃ¿¸öÖ÷ÌâµÄ¸ÅÂÊ£¬È»ºó»ùÓÚÂÖÅÌ¶Ä½øĞĞÑ¡Ôñ
+			// æŠ½å–æ–‡æ¡£æ‰€å±çš„ä¸»é¢˜ï¼Œè®¡ç®—è¯¥ç¯‡æ–‡æ¡£å±äºæ¯ä¸ªä¸»é¢˜çš„æ¦‚ç‡ï¼Œç„¶ååŸºäºè½®ç›˜èµŒè¿›è¡Œé€‰æ‹©
 			for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-				//ÕâÀïÕâ¸ö¹«Ê½ÊÇÄÄÀïÀ´µÄÄØ,ÕâÀï×÷ÕßÅªµÃ´Ê¶¼ÊÇÀ´×ÔÓÚ¶àÏîÊ½·Ö²¼
+				//è¿™é‡Œè¿™ä¸ªå…¬å¼æ˜¯å“ªé‡Œæ¥çš„å‘¢,è¿™é‡Œä½œè€…å¼„å¾—è¯éƒ½æ˜¯æ¥è‡ªäºå¤šé¡¹å¼åˆ†å¸ƒ
 				multiPros[tIndex] = (docTopicCount[tIndex] + alpha);
 				for (int wIndex = 0; wIndex < docSize; wIndex++) {
 					int word = document.get(wIndex);
@@ -797,14 +797,14 @@ public class LFEPDP_CA
 							/ (sumTopicWordCountDMM[tIndex] + betaSum));
 				}
 			}
-			//»ùÓÚÂÖÅÌ¶Ä½øĞĞÑ¡Ôñ
+			//åŸºäºè½®ç›˜èµŒè¿›è¡Œé€‰æ‹©
 			topic = FuncUtils.nextDiscrete(multiPros);
-			//ĞÂÖ÷Ìâ¶ÔÓ¦µÄÎÄµµÊıÁ¿¼Ó1
+			//æ–°ä¸»é¢˜å¯¹åº”çš„æ–‡æ¡£æ•°é‡åŠ 1
 			docTopicCount[topic] ++;;
-			//ÅĞ¶Ï¸ÃÖ÷ÌâÊÇÀ´×ÔÓÚÒşÌØÕ÷»¹ÊÇ¶àÏîÊ½·Ö²¼
+			//åˆ¤æ–­è¯¥ä¸»é¢˜æ˜¯æ¥è‡ªäºéšç‰¹å¾è¿˜æ˜¯å¤šé¡¹å¼åˆ†å¸ƒ
 			for (int wIndex = 0; wIndex < docSize; wIndex++) {
 				int word = document.get(wIndex);// wordID
-				//ÕâÀïÊÇ¶Ôs_{di}µÄ³éÑù£¬²ÉÓÃµÄÊÇÖ±½Ó¼ÆËã£¬²¢Ã»ÓĞÊ¹ÓÃÂÖÅÌ¶Ä
+				//è¿™é‡Œæ˜¯å¯¹s_{di}çš„æŠ½æ ·ï¼Œé‡‡ç”¨çš„æ˜¯ç›´æ¥è®¡ç®—ï¼Œå¹¶æ²¡æœ‰ä½¿ç”¨è½®ç›˜èµŒ
 				if (lambda * (topicWordCountLF[topic][word] + beta)
 						/ (sumTopicWordCountLF[topic] + betaSum) > (1 - lambda)
 						* (topicWordCountDMM[topic][word] + beta)
@@ -818,7 +818,7 @@ public class LFEPDP_CA
 					sumTopicWordCountDMM[topic] += 1;
 					z_words[dIndex][wIndex] = 0;
 				}
-				z[dIndex] = topic; //¸üĞÂÖ÷Ìâ
+				z[dIndex] = topic; //æ›´æ–°ä¸»é¢˜
 			}
 		}
 	}
@@ -911,14 +911,14 @@ public class LFEPDP_CA
 
 			Map<Integer, Double> topicWordProbs = new TreeMap<Integer, Double>();
 			for (int wIndex = 0; wIndex < vocabularySize; wIndex++) {
-				//»ñÈ¡¸ÅÂÊÖµ£¬ÕâÀï¿ÉÒÔ¿´³ö°üº¬Á½²¿·ÖµÄÄÚÈİ£¬½«Á½²¿·ÖĞÅÏ¢½øĞĞÈÚºÏÁË
+				//è·å–æ¦‚ç‡å€¼ï¼Œè¿™é‡Œå¯ä»¥çœ‹å‡ºåŒ…å«ä¸¤éƒ¨åˆ†çš„å†…å®¹ï¼Œå°†ä¸¤éƒ¨åˆ†ä¿¡æ¯è¿›è¡Œèåˆäº†
 				double pro = lambda * expDotProductValues[tIndex][wIndex] / sumExpValues[tIndex]
 						+ (1 - lambda) * (topicWordCountDMM[tIndex][wIndex] + beta)
 						/ (sumTopicWordCountDMM[tIndex] + betaSum);
 
 				topicWordProbs.put(wIndex, pro);
 			}
-			//Ö÷Ìâ´Ê·Ö²¼½µĞòÅÅĞò
+			//ä¸»é¢˜è¯åˆ†å¸ƒé™åºæ’åº
 			topicWordProbs = FuncUtils.sortByValueDescending(topicWordProbs);
 
 			Set<Integer> mostLikelyWords = topicWordProbs.keySet();
@@ -981,7 +981,7 @@ public class LFEPDP_CA
 	}
 	/**
 	 * compute theta
-	 * ÑÏ¸ñ°´ÕÕÂÛÎÄ¹«Ê½À´µÄ
+	 * ä¸¥æ ¼æŒ‰ç…§è®ºæ–‡å…¬å¼æ¥çš„
 	 */
 	public void writerTheta()
 			throws IOException
@@ -1008,24 +1008,24 @@ public class LFEPDP_CA
 	public void write()
 			throws IOException
 	{
-		//Ö÷Ìâ´Ê·Ö²¼
+		//ä¸»é¢˜è¯åˆ†å¸ƒ
 		writeTopTopicalWords();
-		/*//ÎÄµµÖ÷Ìâ·Ö²¼,Õâ¸öÊÇ¸ö´óÎÄ¼ş£¬²»ÒªÁË
+		/*//æ–‡æ¡£ä¸»é¢˜åˆ†å¸ƒ,è¿™ä¸ªæ˜¯ä¸ªå¤§æ–‡ä»¶ï¼Œä¸è¦äº†
 		writeDocTopicPros();*/
-		//Ö÷Ìâ·ÖÅäÇé¿ö
+		//ä¸»é¢˜åˆ†é…æƒ…å†µ
 		writeTopicAssignments();
-		//Ö÷Ìâ´Ê¸ÅÂÊ
+		//ä¸»é¢˜è¯æ¦‚ç‡
 		writeTopicWordPros();
-		//Ö÷Ìâ·Ö²¼
+		//ä¸»é¢˜åˆ†å¸ƒ
 		writerTheta();
-		//Ã¿Ò»´úÖ÷ÌâÊıÄ¿
+		//æ¯ä¸€ä»£ä¸»é¢˜æ•°ç›®
 		writerIterTopic();
 	}
 
 	public static void main(String args[])
 			throws Exception
 	{
-		//³õÊ¼»¯µü´ú´ÎÊı----Ä£ĞÍµü´ú´ÎÊı
+		//åˆå§‹åŒ–è¿­ä»£æ¬¡æ•°----æ¨¡å‹è¿­ä»£æ¬¡æ•°
 		LFEPDP_CA lfdpmm = new LFEPDP_CA("test/cartest", "test/wordVectors2.txt", 1, 0.1, 0.01, 0.3, 20,
 				200, 40, "LFDPMM_Competitor");
 		lfdpmm.writeParameters();
