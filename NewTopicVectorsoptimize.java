@@ -10,30 +10,38 @@ import cc.mallet.optimize.InvalidOptimizableException;
 import cc.mallet.optimize.Optimizer;
 import cc.mallet.types.MatrixOps;
 import utility.LBFGS;
-
+/**
+ * We proposed the LF-EPDP model for mining product relationships.
+ * 
+ * This is the implementation of this model.
+ * 
+ * We also reference the code of the LFDMM.
+ * 
+ * @author Yang Qian
+ */
 public class NewTopicVectorsoptimize {
 	public final static double l2Regularizer = 0.01;
 	public final static double tolerance = 0.05;
 	public static int[][] topicWordCountLF;
 	public static double[][] wordVectors;
-	public static double[] sumExpValues; // Partition function values ÇóºÍµÄÖµ
-	public static double[][] dotProductValues;   //µã³Ë·¨µÄÖµ
-	public static double[][] expDotProductValues;  //Ö¸Êı±ä»¯ºóµÄÖµ
-	public static double[][] topicVectors;// Vector representations for topics Ö÷ÌâÏòÁ¿±íÊ¾
-	public static int vocabularySize; // The number of word types in the corpus  Õû¸öÓïÁÏÖĞµ¥´ÊµÄ×ÜÊı
-	public static int vectorSize; // Number of vector dimensions  ÏòÁ¿µÄÎ¬¶È
-	public static HashMap<String, Integer> word2IdVocabulary; // Vocabulary to get ID  µ¥´ÊµÄ±àºÅ
+	public static double[] sumExpValues; // Partition function values æ±‚å’Œçš„å€¼
+	public static double[][] dotProductValues;   //ç‚¹ä¹˜æ³•çš„å€¼
+	public static double[][] expDotProductValues;  //æŒ‡æ•°å˜åŒ–åçš„å€¼
+	public static double[][] topicVectors;// Vector representations for topics ä¸»é¢˜å‘é‡è¡¨ç¤º
+	public static int vocabularySize; // The number of word types in the corpus  æ•´ä¸ªè¯­æ–™ä¸­å•è¯çš„æ€»æ•°
+	public static int vectorSize; // Number of vector dimensions  å‘é‡çš„ç»´åº¦
+	public static HashMap<String, Integer> word2IdVocabulary; // Vocabulary to get ID  å•è¯çš„ç¼–å·
 	// given a word
-	public static HashMap<Integer, String> id2WordVocabulary; // Vocabulary to get word  ½«±àºÅ×ª»¯Îªµ¥´Ê  ÓÃÓÚÊä³ö
+	public static HashMap<Integer, String> id2WordVocabulary; // Vocabulary to get word  å°†ç¼–å·è½¬åŒ–ä¸ºå•è¯  ç”¨äºè¾“å‡º
 	public static void main(String[] args) throws Exception {
 		System.out.println(getWordProbGenrateNewTopic());
 		System.out.println(1.000000/vocabularySize);
 	}
 	public static double getWordProbGenrateNewTopic() throws Exception{
-		//¶ÁÈ¡ÓïÁÏ
+		//è¯»å–è¯­æ–™
 		readcorpusFile("cardata/ccomment_combine.txt");
 		readWordVectors("cardata/wordVectors.txt");
-		//ÓÅ»¯
+		//ä¼˜åŒ–
 		topicWordCountLF = new int[1][vocabularySize];
 		for (int i = 0; i < vocabularySize; i++) {
 			topicWordCountLF[0][i] = 0;
@@ -55,15 +63,15 @@ public class NewTopicVectorsoptimize {
 		while (check) {
 			double l2Value = l2Regularizer * rate;
 			try {
-				//Ö÷ÌâÏòÁ¿±íÊ¾  Ö÷Ìâ°üº¬µÄµ¥´Ê¸öÊı  ´ÊÏòÁ¿ ÕıÔò»¯Öµ(ÕâÀïÊÇ´«Èë²ÎÊı-----ÒÔ±ãÖ´ĞĞTopicVectorOptimizer)
+				//ä¸»é¢˜å‘é‡è¡¨ç¤º  ä¸»é¢˜åŒ…å«çš„å•è¯ä¸ªæ•°  è¯å‘é‡ æ­£åˆ™åŒ–å€¼(è¿™é‡Œæ˜¯ä¼ å…¥å‚æ•°-----ä»¥ä¾¿æ‰§è¡ŒTopicVectorOptimizer)
 				TopicVectorOptimizer optimizer = new TopicVectorOptimizer(
 						topicVectors[0], topicWordCountLF[0], wordVectors, l2Value);
-				//Í¨¹ıLBFGSÓÅ»¯
+				//é€šè¿‡LBFGSä¼˜åŒ–
 				Optimizer gd = new LBFGS(optimizer, tolerance);
 				gd.optimize(600);
-				//ĞèÒªÓÅ»¯µÄ²ÎÊı
+				//éœ€è¦ä¼˜åŒ–çš„å‚æ•°
 				optimizer.getParameters(topicVectors[0]);
-				//ÊäÈëµÄÊÇÁ½¸öÌØÕ÷µÄ³Ë»ıÒÔ¼°Æä¼ÓºÍ-----Õë¶ÔÃ¿¸öÖ÷Ìâ¼ÆËãÒ»¸öÏòÁ¿Öµ£¨ÎªÁË¸üĞÂÖ÷ÌâÊ¹ÓÃ£©
+				//è¾“å…¥çš„æ˜¯ä¸¤ä¸ªç‰¹å¾çš„ä¹˜ç§¯ä»¥åŠå…¶åŠ å’Œ-----é’ˆå¯¹æ¯ä¸ªä¸»é¢˜è®¡ç®—ä¸€ä¸ªå‘é‡å€¼ï¼ˆä¸ºäº†æ›´æ–°ä¸»é¢˜ä½¿ç”¨ï¼‰
 				sumExpValues[0] = optimizer.computePartitionFunction(
 						dotProductValues[0], expDotProductValues[0]);
 				check = false;
@@ -90,35 +98,35 @@ public class NewTopicVectorsoptimize {
 	}
 	public static void readcorpusFile(String pathTocorpusFile)
 	{
-		//´Ê×ª»¯Îª±àºÅ
+		//è¯è½¬åŒ–ä¸ºç¼–å·
 		word2IdVocabulary = new HashMap<String, Integer>();
-		//±àºÅ×ª»¯Îª´Ê
+		//ç¼–å·è½¬åŒ–ä¸ºè¯
 		id2WordVocabulary = new HashMap<Integer, String>();
 		BufferedReader br = null;
 		try {
 			int indexWord = -1;
 			br = new BufferedReader(new FileReader(pathTocorpusFile));
-			//Ã¿Ò»ĞĞ±íÊ¾Ò»¸öÎÄµµ
+			//æ¯ä¸€è¡Œè¡¨ç¤ºä¸€ä¸ªæ–‡æ¡£
 			for (String doc; (doc = br.readLine()) != null;) {
 				if (doc.trim().length() == 0)
 					continue;
-				//ÎÄµµµ¥´Ê²ğ·Ö
+				//æ–‡æ¡£å•è¯æ‹†åˆ†
 				String[] words = doc.trim().split("\\s+");
-				//ÎÄµµ±íÊ¾³É¼¯ºÏ
+				//æ–‡æ¡£è¡¨ç¤ºæˆé›†åˆ
 				List<Integer> document = new ArrayList<Integer>();
-				//¶ÔÎÄµµµÄËùÓĞµ¥´Ê½øĞĞÑ­»·
+				//å¯¹æ–‡æ¡£çš„æ‰€æœ‰å•è¯è¿›è¡Œå¾ªç¯
 				for (String word : words) {
-					//ÎÄµµÖĞµ¥´Ê±àºÅ-----±àºÅÊÇÈ«¾Ö¶øÑÔ
+					//æ–‡æ¡£ä¸­å•è¯ç¼–å·-----ç¼–å·æ˜¯å…¨å±€è€Œè¨€
 					if (word2IdVocabulary.containsKey(word)) {
-						//Èç¹û°üº¬ÁË¸Ãµ¥´Ê£¬½«¸Ãµ¥´ÊÖ±½ÓÌí¼Óµ½ÎÄµµ¼¯ºÏÖĞ
+						//å¦‚æœåŒ…å«äº†è¯¥å•è¯ï¼Œå°†è¯¥å•è¯ç›´æ¥æ·»åŠ åˆ°æ–‡æ¡£é›†åˆä¸­
 						document.add(word2IdVocabulary.get(word));
 					}
 					else {
-						//¼Ó1±íÊ¾´Ó0¿ªÊ¼¶Ôµ¥´Ê½øĞĞ±àºÅ£¬²¢½«±àºÅ¶ÔÓ¦µÄµ¥´Ê¼ÓÈëµ½id2WordVocabulary
+						//åŠ 1è¡¨ç¤ºä»0å¼€å§‹å¯¹å•è¯è¿›è¡Œç¼–å·ï¼Œå¹¶å°†ç¼–å·å¯¹åº”çš„å•è¯åŠ å…¥åˆ°id2WordVocabulary
 						indexWord += 1;
 						word2IdVocabulary.put(word, indexWord);
 						id2WordVocabulary.put(indexWord, word);
-						//ÎÄµµÌí¼Ó¸Ãµ¥´Ê
+						//æ–‡æ¡£æ·»åŠ è¯¥å•è¯
 						document.add(indexWord);
 					}
 				}
@@ -130,36 +138,36 @@ public class NewTopicVectorsoptimize {
 		}
 		vocabularySize = word2IdVocabulary.size();
 	}
-	//¶ÁÈ¡´ÊÏòÁ¿ÎÄ¼ş
+	//è¯»å–è¯å‘é‡æ–‡ä»¶
 	public static void readWordVectors(String pathToWordVectorsFile)
 			throws Exception
 	{
-		//Êä³öĞèÒª¶ÁÈ¡´ÊÏòÁ¿ÎÄ¼şµÄÏà¶ÔµØÖ·
+		//è¾“å‡ºéœ€è¦è¯»å–è¯å‘é‡æ–‡ä»¶çš„ç›¸å¯¹åœ°å€
 		System.out.println("Reading word vectors from word-vectors file " + pathToWordVectorsFile
 				+ "...");
 
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(pathToWordVectorsFile));
-			//ÒÔ¿Õ¸ñ·Ö¿ª
+			//ä»¥ç©ºæ ¼åˆ†å¼€
 			String[] elements = br.readLine().trim().split("\\s+");
-			//´ÊÏòÁ¿µÄ³¤¶È£¬ÕâÀï¼õ1ÊÇÒòÎªµÚÒ»Î¬¶ÈÊÇ´Ê
+			//è¯å‘é‡çš„é•¿åº¦ï¼Œè¿™é‡Œå‡1æ˜¯å› ä¸ºç¬¬ä¸€ç»´åº¦æ˜¯è¯
 			vectorSize = elements.length - 1;
-			//word2vecÏòÁ¿µÄÎ¬¶È£¬Ö»È¥ÓïÁÏÖĞÓĞµÄ´ÊvocabularySize
+			//word2vecå‘é‡çš„ç»´åº¦ï¼Œåªå»è¯­æ–™ä¸­æœ‰çš„è¯vocabularySize
 			wordVectors = new double[vocabularySize][vectorSize];
-			//µ¥´ÊÎªµÚÒ»Î¬¶È
+			//å•è¯ä¸ºç¬¬ä¸€ç»´åº¦
 			String word = elements[0];
-			//Èç¹ûÕâ¸ö´ÊÓïÔÚÓïÁÏÖĞµÄ»°£¬½«¸Ã´ÊµÄ´ÊÏòÁ¿´æÈëÊı×éwordVectors
+			//å¦‚æœè¿™ä¸ªè¯è¯­åœ¨è¯­æ–™ä¸­çš„è¯ï¼Œå°†è¯¥è¯çš„è¯å‘é‡å­˜å…¥æ•°ç»„wordVectors
 			if (word2IdVocabulary.containsKey(word)) {
 				for (int j = 0; j < vectorSize; j++) {
 					wordVectors[word2IdVocabulary.get(word)][j] = new Double(elements[j + 1]);
 				}
 			}
-			//¼ÌĞø¶ÁÎÄ±¾£¬ÉÏÃæÖ®ËùÒÔÒªÏÈ¶ÁÒ»ĞĞÊÇÎªÁË³õÊ¼»¯£¬»ñÈ¡´ÊÏòÁ¿µÄÎ¬¶È
+			//ç»§ç»­è¯»æ–‡æœ¬ï¼Œä¸Šé¢ä¹‹æ‰€ä»¥è¦å…ˆè¯»ä¸€è¡Œæ˜¯ä¸ºäº†åˆå§‹åŒ–ï¼Œè·å–è¯å‘é‡çš„ç»´åº¦
 			for (String line; (line = br.readLine()) != null;) {
 				elements = line.trim().split("\\s+");
 				word = elements[0];
-				//ÓïÁÏÖĞ³öÏÖµÄÃ¿¸öµ¥´ÊµÄ´ÊÏòÁ¿
+				//è¯­æ–™ä¸­å‡ºç°çš„æ¯ä¸ªå•è¯çš„è¯å‘é‡
 				if (word2IdVocabulary.containsKey(word)) {
 					for (int j = 0; j < vectorSize; j++) {
 						wordVectors[word2IdVocabulary.get(word)][j] = new Double(elements[j + 1]);
@@ -170,7 +178,7 @@ public class NewTopicVectorsoptimize {
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-		//·ÀÖ¹ÓïÁÏÖĞµÄ´ÊÔÚword2vecÎÄ¼şÖĞ²»´æÔÚ
+		//é˜²æ­¢è¯­æ–™ä¸­çš„è¯åœ¨word2vecæ–‡ä»¶ä¸­ä¸å­˜åœ¨
 		for (int i = 0; i < vocabularySize; i++) {
 			if (MatrixOps.absNorm(wordVectors[i]) == 0.0) {
 				System.out.println("The word \"" + id2WordVocabulary.get(i)
